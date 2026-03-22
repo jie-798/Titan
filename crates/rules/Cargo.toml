@@ -1,0 +1,9 @@
+[package]
+name = "titan-rules"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+titan-config = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }

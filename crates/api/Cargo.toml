@@ -1,0 +1,14 @@
+[package]
+name = "titan-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+titan-core = { workspace = true }
+titan-config = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+axum = { version = "0.8", features = ["json"] }

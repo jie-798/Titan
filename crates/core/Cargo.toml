@@ -1,0 +1,22 @@
+[package]
+name = "titan-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+titan-config = { workspace = true }
+titan-protocols = { workspace = true }
+titan-rules = { workspace = true }
+titan-dns = { workspace = true }
+
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+bytes = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+dashmap = { workspace = true }
+uuid = { workspace = true }
+url = { workspace = true }

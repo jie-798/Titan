@@ -1,0 +1,76 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/config",
+    "crates/protocols",
+    "crates/rules",
+    "crates/dns",
+    "crates/api",
+    "crates/system-proxy",
+    "bin/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+# 核心依赖
+titan-core = { path = "crates/core" }
+titan-config = { path = "crates/config" }
+titan-protocols = { path = "crates/protocols" }
+titan-rules = { path = "crates/rules" }
+titan-dns = { path = "crates/dns" }
+titan-api = { path = "crates/api" }
+titan-system-proxy = { path = "crates/system-proxy" }
+
+# 异步
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+
+# 序列化
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+# 网络
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+hyper = { version = "1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+http-body-util = "0.1"
+rustls = { version = "0.23", features = ["ring"] }
+tokio-rustls = "0.26"
+quinn = "0.11"
+
+# 加密
+ring = "0.17"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# 错误处理
+anyhow = "1"
+thiserror = "1"
+
+# 日志
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# 工具
+bytes = "1"
+futures = "0.3"
+base64 = "0.22"
+url = "2"
+urlencoding = "2"
+uuid = { version = "1", features = ["v4"] }
+parking_lot = "0.12"
+dashmap = "6"
+webpki-roots = "0.26"
+
+anytls-rs = "0.5"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

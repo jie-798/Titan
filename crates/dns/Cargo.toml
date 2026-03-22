@@ -1,0 +1,10 @@
+[package]
+name = "titan-dns"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+titan-config = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }

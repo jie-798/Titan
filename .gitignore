@@ -1,0 +1,23 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Local runtime files
+*.log
+stdout.log
+stderr.log
+nul
+
+# Local data and subscriptions
+/data/*
+!/data/.gitkeep
+
+# Editors and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local project notes
+/*.md
+!/README.md
