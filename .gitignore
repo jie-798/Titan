@@ -18,6 +18,10 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Frontend generated files
+apps/desktop/tsconfig.tsbuildinfo
+apps/desktop/src-tauri/gen/
+
 # Local project notes
 /*.md
 !/README.md

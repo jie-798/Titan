@@ -1,14 +1,17 @@
 [workspace]
 resolver = "2"
 members = [
+    "apps/desktop/src-tauri",
+    "crates/cli",
+    "crates/tun",
     "crates/core",
     "crates/config",
     "crates/protocols",
     "crates/rules",
     "crates/dns",
     "crates/api",
+    "crates/app",
     "crates/system-proxy",
-    "bin/cli",
 ]
 
 [workspace.package]
@@ -23,6 +26,8 @@ titan-protocols = { path = "crates/protocols" }
 titan-rules = { path = "crates/rules" }
 titan-dns = { path = "crates/dns" }
 titan-api = { path = "crates/api" }
+titan-app = { path = "crates/app" }
+titan-tun = { path = "crates/tun" }
 titan-system-proxy = { path = "crates/system-proxy" }
 
 # 异步
@@ -67,6 +72,7 @@ uuid = { version = "1", features = ["v4"] }
 parking_lot = "0.12"
 dashmap = "6"
 webpki-roots = "0.26"
+chrono = { version = "0.4", default-features = true, features = ["clock"] }
 
 anytls-rs = "0.5"
 

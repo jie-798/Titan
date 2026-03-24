@@ -12,3 +12,4 @@ serde_json = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 axum = { version = "0.8", features = ["json"] }
+chrono = { workspace = true }

@@ -1,0 +1,15 @@
+[package]
+name = "titan-app"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+titan-core = { workspace = true }
+titan-api = { workspace = true }
+titan-config = { workspace = true }
+titan-system-proxy = { workspace = true }
+
+anyhow = { workspace = true }
+serde = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }

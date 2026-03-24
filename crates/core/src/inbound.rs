@@ -1,8 +1,6 @@
 use std::io;
 use std::net::SocketAddr;
-use std::collections::HashSet;
 use std::sync::Arc;
-use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -31,11 +29,25 @@ impl InboundServer {
 
             tokio::spawn(async move {
                 if let Err(err) = handle_client(stream, peer_addr, engine).await {
-                    warn!("failed to handle inbound connection {}: {}", peer_addr, err);
+                    if is_benign_inbound_error(&err) {
+                        debug!("inbound connection {} closed early: {}", peer_addr, err);
+                    } else {
+                        warn!("failed to handle inbound connection {}: {}", peer_addr, err);
+                    }
                 }
             });
         }
     }
+}
+
+fn is_benign_inbound_error(err: &anyhow::Error) -> bool {
+    let message = err.to_string().to_ascii_lowercase();
+    message.contains("client closed connection")
+        || message.contains("unexpected eof")
+        || message.contains("software caused connection abort")
+        || message.contains("connection reset by peer")
+        || message.contains("os error 10053")
+        || message.contains("os error 10054")
 }
 
 enum InboundRequest {
@@ -69,12 +81,13 @@ async fn handle_client(
     let request = detect_and_parse_request(&mut client).await?;
     let target = request.target().clone();
 
-    let proxy_name = engine
-        .select_proxy(&target)
+    let route = engine
+        .select_route(&target)
         .await
         .ok_or_else(|| anyhow::anyhow!("no matching outbound policy"))?;
+    let proxy_name = route.policy.clone();
     let (resolved_proxy_name, mut outbound) =
-        match connect_with_failover(engine.clone(), &proxy_name, &target).await {
+        match engine.connect_outbound_with_failover(&proxy_name, &target, 2).await {
             Ok(result) => result,
             Err(err) => {
                 respond_connect_failure(&mut client, &request).await?;
@@ -94,6 +107,8 @@ async fn handle_client(
         peer_addr.to_string(),
         target.to_string(),
         resolved_proxy_name.clone(),
+        Some(route.policy.clone()),
+        Some(route.rule.clone()),
     );
 
     let relay_result = tokio::io::copy_bidirectional(&mut client, &mut outbound).await;
@@ -103,8 +118,8 @@ async fn handle_client(
                 .session_manager()
                 .update_traffic(&session.id, upload, download);
             debug!(
-                "relayed {} -> {} via {} (up={} down={})",
-                peer_addr, target, resolved_proxy_name, upload, download
+                "relayed {} -> {} via {} rule={} (up={} down={})",
+                peer_addr, target, resolved_proxy_name, route.rule, upload, download
             );
         }
         Err(err) => {
@@ -115,38 +130,6 @@ async fn handle_client(
 
     engine.session_manager().close(&session.id);
     Ok(())
-}
-
-async fn connect_with_failover(
-    engine: Arc<ProxyEngine>,
-    policy_name: &str,
-    target: &titan_protocols::Target,
-) -> anyhow::Result<(String, titan_protocols::BoxedStream)> {
-    let mut excluded = HashSet::new();
-    let mut last_error: Option<anyhow::Error> = None;
-
-    for _attempt in 0..2 {
-        let Some((resolved_name, outbound_proxy)) =
-            engine.resolve_outbound(policy_name, &excluded).await
-        else {
-            break;
-        };
-
-        match outbound_proxy.connect_tcp(target).await {
-            Ok(stream) => return Ok((resolved_name, stream)),
-            Err(err) => {
-                engine
-                    .mark_outbound_unhealthy(&resolved_name, Duration::from_secs(60))
-                    .await;
-                excluded.insert(resolved_name);
-                last_error = Some(err);
-            }
-        }
-    }
-
-    Err(last_error.unwrap_or_else(|| {
-        anyhow::anyhow!("no usable outbound remained for policy {}", policy_name)
-    }))
 }
 
 async fn detect_and_parse_request(stream: &mut TcpStream) -> anyhow::Result<InboundRequest> {

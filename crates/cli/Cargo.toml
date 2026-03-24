@@ -1,0 +1,29 @@
+[package]
+name = "titan"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "titan"
+path = "src/main.rs"
+
+[dependencies]
+titan-api = { workspace = true }
+titan-core = { workspace = true }
+titan-config = { workspace = true }
+titan-protocols = { workspace = true }
+titan-rules = { workspace = true }
+titan-dns = { workspace = true }
+titan-tun = { workspace = true }
+titan-system-proxy = { workspace = true }
+
+tokio = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+reqwest = { workspace = true }
+chrono = { workspace = true }

@@ -19,7 +19,7 @@ pub use hysteria2::Hysteria2Proxy;
 pub use reject::RejectProxy;
 pub use shadowsocks::ShadowsocksProxy;
 pub use socks5::Socks5Proxy;
-pub use trait_def::{BoxedStream, OutboundProxy, Target};
+pub use trait_def::{BoxedDatagram, Datagram, BoxedStream, OutboundProxy, Target};
 pub use trojan::TrojanProxy;
 pub use vless::VlessProxy;
 pub use vmess::VMessProxy;

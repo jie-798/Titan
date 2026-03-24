@@ -3,12 +3,13 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf};
+use tokio::net::UdpSocket;
 use tracing::debug;
 use url::Url;
 
 use titan_config::ProxyConfig;
 
-use crate::{BoxedStream, OutboundProxy, Target};
+use crate::{BoxedDatagram, BoxedStream, Datagram, OutboundProxy, Target};
 
 pub struct AnyTlsProxy {
     name: String,
@@ -18,6 +19,7 @@ pub struct AnyTlsProxy {
     sni: Option<String>,
     alpn: Vec<Vec<u8>>,
     skip_cert_verify: bool,
+    udp: bool,
 }
 
 impl AnyTlsProxy {
@@ -36,6 +38,7 @@ impl AnyTlsProxy {
                 .map(|value| value.into_bytes())
                 .collect(),
             skip_cert_verify: config.skip_cert_verify,
+            udp: config.udp,
         }
     }
 
@@ -124,6 +127,22 @@ impl OutboundProxy for AnyTlsProxy {
             read_half,
             write_half,
         }))
+    }
+
+    fn supports_udp(&self) -> bool {
+        self.udp
+    }
+
+    async fn connect_udp(&self, target: &Target) -> anyhow::Result<BoxedDatagram> {
+        let client = self.create_client()?;
+        let target_addr = target.socket_addr()?;
+        let local_bound = client
+            .create_udp_proxy("127.0.0.1:0", target_addr)
+            .await
+            .map_err(|err| anyhow::anyhow!("failed to create AnyTLS UDP proxy: {}", err))?;
+        let socket = UdpSocket::bind("127.0.0.1:0").await?;
+        socket.connect(local_bound).await?;
+        Ok(Box::new(AnyTlsDatagram { socket }))
     }
 
     async fn delay_test(&self, url: &str, timeout: Duration) -> anyhow::Result<Duration> {
@@ -217,6 +236,21 @@ impl AsyncRead for SplitStream {
         buf: &mut ReadBuf<'_>,
     ) -> std::task::Poll<std::io::Result<()>> {
         std::pin::Pin::new(&mut self.read_half).poll_read(cx, buf)
+    }
+}
+
+struct AnyTlsDatagram {
+    socket: UdpSocket,
+}
+
+#[async_trait]
+impl Datagram for AnyTlsDatagram {
+    async fn send(&mut self, data: &[u8]) -> anyhow::Result<usize> {
+        Ok(self.socket.send(data).await?)
+    }
+
+    async fn recv(&mut self, buf: &mut [u8]) -> anyhow::Result<usize> {
+        Ok(self.socket.recv(buf).await?)
     }
 }
 

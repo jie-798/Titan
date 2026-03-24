@@ -1,7 +1,7 @@
 use async_trait::async_trait;
+use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
 
-/// 目标地址
 #[derive(Debug, Clone)]
 pub struct Target {
     pub host: String,
@@ -16,6 +16,14 @@ impl Target {
     pub fn addr(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
+
+    pub fn socket_addr(&self) -> anyhow::Result<SocketAddr> {
+        let ip = self
+            .host
+            .parse::<IpAddr>()
+            .map_err(|_| anyhow::anyhow!("target host is not an IP address: {}", self.host))?;
+        Ok(SocketAddr::new(ip, self.port))
+    }
 }
 
 impl std::fmt::Display for Target {
@@ -24,23 +32,32 @@ impl std::fmt::Display for Target {
     }
 }
 
-/// 箱式流类型
 pub type BoxedStream = Box<dyn Stream>;
+pub type BoxedDatagram = Box<dyn Datagram>;
 
-/// Stream trait
 pub trait Stream: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + Sync {}
 
 impl<T: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + Sync> Stream for T {}
 
-/// 统一的出站代理接口
+#[async_trait]
+pub trait Datagram: Unpin + Send + Sync {
+    async fn send(&mut self, data: &[u8]) -> anyhow::Result<usize>;
+    async fn recv(&mut self, buf: &mut [u8]) -> anyhow::Result<usize>;
+}
+
 #[async_trait]
 pub trait OutboundProxy: Send + Sync {
-    /// 获取代理名称
     fn name(&self) -> &str;
 
-    /// 建立TCP连接
     async fn connect_tcp(&self, target: &Target) -> anyhow::Result<BoxedStream>;
 
-    /// 延迟测试
+    fn supports_udp(&self) -> bool {
+        false
+    }
+
+    async fn connect_udp(&self, _target: &Target) -> anyhow::Result<BoxedDatagram> {
+        anyhow::bail!("UDP is not supported by this outbound")
+    }
+
     async fn delay_test(&self, url: &str, timeout: Duration) -> anyhow::Result<Duration>;
 }
